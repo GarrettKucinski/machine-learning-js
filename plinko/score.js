@@ -1,11 +1,5 @@
 let outputs = []
 
-const predictionPoint = 300
-const k = 6
-
-const ascending = (a, b) => a[1] > b[1]
-const descending = (a, b) => a[1] > b[1]
-
 function shuffle (a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -22,25 +16,24 @@ function splitDataSet (data, countToTest) {
   return [testSet, trainingSet]
 }
 
-function sortBy (direction) {
-  return function (a, b) {
-    if (direction(a, b)) return -1
-    if (!direction(a, b)) return 1
-    return 0
-  }
+const sortBy = i => (a, b) => {
+  if (a[i] < b[i]) return -1
+  if (a[i] > b[i]) return 1
+  return 0
 }
 
 function createPairs (obj) {
   return Object.entries(obj).map(([key, value]) => [key, value])
 }
 
-function distance (point) {
-  return Math.abs(point - predictionPoint)
+function distance (a, b) {
+  return Math.abs(a - b)
 }
 
-function calculateAbsoluteDropPosition (data) {
-  const [position, , , bucket] = data
-  return [distance(position), bucket]
+function calculateAbsoluteDropPosition (dropPoint) {
+  return function ([position, , , bucket]) {
+    return [distance(position, dropPoint), bucket]
+  }
 }
 
 function findMostCommonRecord (acc, [point, bucket]) {
@@ -58,15 +51,47 @@ function onScoreUpdate (dropPosition, bounciness, size, bucketLabel) {
   outputs = [...outputs, [dropPosition, bounciness, size, bucketLabel]]
 }
 
+function knn (data, point, k) {
+  // calculate how far away from our testPoint each point in the training
+  // data is
+  const positions = data.map(calculateAbsoluteDropPosition(point))
+
+  // Sort the new points by the ones calculated to be most similar to
+  // the point we are trying to test
+  const sorted = positions.sort(sortBy(0))
+
+  // Take the top K records from out sorted data
+  const kRecords = sorted.slice(0, k)
+
+  // find the most common record amongst the top K records
+  const map = kRecords.reduce(findMostCommonRecord, {})
+
+  // create array pairs of our top buckets and bucketCounts
+  // sort those pairs by the bucket with the highest count
+  const result = createPairs(map).sort(sortBy(1))
+
+  // Choose the top record which is the bucket we are
+  // predicting to have been the most similar to the test point
+  const [bucket] = result[result.length - 1]
+
+  // return the bucket we predicted the test point would
+  // have fallen into
+  return bucket
+}
+
 function runAnalysis () {
-  // Write code here to analyze stuff
+  const testSetSize = 50
+  const [testSet, trainingSet] = splitDataSet(outputs, testSetSize)
 
-  const positions = outputs.map(calculateAbsoluteDropPosition)
-  const sorted = positions.sort(sortBy(ascending))
-  const map = sorted.reduce(findMostCommonRecord, {})
-  const result = createPairs(map).sort(sortBy(descending)).slice(0, k)
+  _.range(1, 15).forEach(k => {
+    const numCorrect = testSet.filter(
+      // Compare how close our predicted bucket we received from our knn
+      // algorithm actually was the the bucket in the point we are testing
+      ([point, , , actual]) => +(knn(trainingSet, point, k)) === +actual
+    ).length
 
-  const [[bucket]] = result
-
-  console.log('It will probably fall into', bucket)
+    const accuracy = (numCorrect / testSetSize) * 100
+    console.log(`accuracy: ${accuracy}%
+    k value: ${k}`)
+  })
 }
