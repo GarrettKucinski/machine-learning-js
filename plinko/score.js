@@ -1,5 +1,22 @@
 let outputs = []
 
+function normalize (data, featureCount) {
+  const normalizedData = [...data]
+
+  for (let i = 0; i < featureCount; i++) {
+    const column = [...data].map(row => row[i])
+
+    const min = Math.min(...column)
+    const max = Math.max(...column)
+
+    for (let j = 0; j < normalizedData.length; j++) {
+      normalizedData[j][i] = (normalizedData[j][i] - min) / (max - min)
+    }
+  }
+
+  return normalizedData
+}
+
 function shuffle (a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -27,12 +44,17 @@ function createPairs (obj) {
 }
 
 function distance (a, b) {
-  return Math.abs(a - b)
+  const zipped = _.zip(a, b)
+  return zipped.reduce((acc, [pointOne, pointTwo]) => {
+    const sum = acc + Math.sqrt((pointOne - pointTwo) ** 2)
+    return sum
+  }, 0)
 }
 
-function calculateAbsoluteDropPosition (dropPoint) {
-  return function ([position, , , bucket]) {
-    return [distance(position, dropPoint), bucket]
+function calculatePointDeltas (testPoint) {
+  const testInitial = testPoint.slice(0, testPoint.length - 1)
+  return function ([a, b, c, bucket]) {
+    return [distance([a, b, c], testInitial), bucket]
   }
 }
 
@@ -54,7 +76,7 @@ function onScoreUpdate (dropPosition, bounciness, size, bucketLabel) {
 function knn (data, point, k) {
   // calculate how far away from our testPoint each point in the training
   // data is
-  const positions = data.map(calculateAbsoluteDropPosition(point))
+  const positions = data.map(calculatePointDeltas(point))
 
   // Sort the new points by the ones calculated to be most similar to
   // the point we are trying to test
@@ -80,14 +102,17 @@ function knn (data, point, k) {
 }
 
 function runAnalysis () {
-  const testSetSize = 50
-  const [testSet, trainingSet] = splitDataSet(outputs, testSetSize)
+  const testSetSize = 100
+  const [testSet, trainingSet] = splitDataSet(
+    normalize(outputs, 3),
+    testSetSize
+  )
 
-  _.range(1, 15).forEach(k => {
+  _.range(1, 20).forEach(k => {
     const numCorrect = testSet.filter(
       // Compare how close our predicted bucket we received from our knn
       // algorithm actually was the the bucket in the point we are testing
-      ([point, , , actual]) => +(knn(trainingSet, point, k)) === +actual
+      dataPoint => +(knn(trainingSet, dataPoint, k)) === +dataPoint.slice(-1)[0]
     ).length
 
     const accuracy = (numCorrect / testSetSize) * 100
