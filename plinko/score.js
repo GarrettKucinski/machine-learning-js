@@ -87,7 +87,6 @@ function knn (data, point, k) {
 
   // find the most common record amongst the top K records
   const map = kRecords.reduce(findMostCommonRecord, {})
-
   // create array pairs of our top buckets and bucketCounts
   // sort those pairs by the bucket with the highest count
   const result = createPairs(map).sort(sortBy(1))
@@ -103,17 +102,25 @@ function knn (data, point, k) {
 
 function runAnalysis () {
   const testSetSize = 100
-  const [testSet, trainingSet] = splitDataSet(
-    normalize(outputs, 3),
-    testSetSize
-  )
+  const k = 10
 
-  _.range(1, 20).forEach(k => {
+  _.range(0, 3).forEach(i => {
+    const data = outputs.reduce((acc, row) => {
+      const reducedData = [row[i], row.slice(-1)]
+      return [...acc, reducedData]
+    }, [])
+    console.log(data)
+    const [testSet, trainingSet] = splitDataSet(
+      normalize(data, 1),
+      testSetSize
+    )
+
     const numCorrect = testSet.filter(
       // Compare how close our predicted bucket we received from our knn
       // algorithm actually was the the bucket in the point we are testing
       dataPoint => +(knn(trainingSet, dataPoint, k)) === +dataPoint.slice(-1)[0]
     ).length
+    console.log(numCorrect)
 
     const accuracy = (numCorrect / testSetSize) * 100
     console.log(`accuracy: ${accuracy}%
