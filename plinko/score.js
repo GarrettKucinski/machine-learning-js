@@ -104,12 +104,8 @@ function runAnalysis () {
   const testSetSize = 100
   const k = 10
 
-  _.range(0, 3).forEach(i => {
-    const data = outputs.reduce((acc, row) => {
-      const reducedData = [row[i], row.slice(-1)]
-      return [...acc, reducedData]
-    }, [])
-    console.log(data)
+  R.range(0, 3).forEach(i => {
+    R.map(outputs, row => [row[i], R.last(row)])
     const [testSet, trainingSet] = splitDataSet(
       normalize(data, 1),
       testSetSize
