@@ -17,7 +17,7 @@ let {
 } = loadCsv('kc_house_data.csv', options)
 
 function knn (features, labels, predictionPoint, k) {
-  // standardization value - average / sqrt of variance
+  // standardization equation: value - average / sqrt of variance
   const { mean, variance } = tf.moments(features, 0)
   const scaledPrediction = predictionPoint.sub(mean).div(variance.pow(0.5))
 
