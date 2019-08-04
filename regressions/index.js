@@ -10,7 +10,7 @@ let { features, labels, testFeatures, testLabels } = loadCsv(
   {
     shuffle: true,
     splitTest: 50,
-    dataColumns: ['horsepower', 'weight', 'displacement'],
+    dataColumns: ['horsepower', 'displacement', 'weight'],
     labelColumns: ['mpg']
   }
 )
@@ -32,4 +32,7 @@ plot({
 
 console.log('R2 is: ', r2)
 
-regression.predict([[120, 2, 380]]).print()
+regression.predict([
+  [120, 380, 2],
+  [70, 90, 1]
+]).print()
