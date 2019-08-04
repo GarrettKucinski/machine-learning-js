@@ -13,9 +13,9 @@ const { features, labels, testFeatures, testLabels } = loadCsv('./cars.csv', {
 })
 
 const linearRegression = new LinearRegression(features, labels, {
-  learningRate: 0.1,
+  learningRate: 0.01,
   iterations: 100,
-  batchSize: 10
+  batchSize: 3
 })
 
 linearRegression.train()

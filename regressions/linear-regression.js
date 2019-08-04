@@ -33,7 +33,7 @@ class LinearRegression {
     )
 
     for (let i = 0; i < this.options.iterations; i++) {
-      for (let j = 0; j < batchQuantity.length; j++) {
+      for (let j = 0; j < batchQuantity; j++) {
         const { batchSize } = this.options
         const startIndex = j * batchSize
 
@@ -42,7 +42,7 @@ class LinearRegression {
           [batchSize, -1]
         )
 
-        const labelSlice = this.label.slice(
+        const labelSlice = this.labels.slice(
           [startIndex, 0],
           [batchSize, -1]
         )
