@@ -4,29 +4,53 @@ class LinearRegression {
   constructor (features, labels, options) {
     this.features = this.processFeatures(features)
     this.labels = tf.tensor(labels)
-    this.options = Object.assign({
+    this.mseHistory = []
+    this.options = {
       learningRate: 0.1,
-      iterations: 1000
-    }, options)
+      iterations: 1000,
+      batchSize: 0,
+      ...options
+    }
 
-    this.weights = tf.zeros([2, 1])
+    this.weights = tf.zeros([this.features.shape[1], 1])
   }
 
-  gradientDescent () {
-    const currentGuesses = this.features.matMul(this.weights)
-    const differences = currentGuesses.sub(this.labels)
+  gradientDescent (features, labels) {
+    const currentGuesses = features.matMul(this.weights)
+    const differences = currentGuesses.sub(labels)
 
-    const slopes = this.features
+    const slopes = features
       .transpose()
       .matMul(differences)
-      .div(this.features.shape[0])
+      .div(features.shape[0])
 
     this.weights = this.weights.sub(slopes.mul(this.options.learningRate))
   }
 
   train () {
+    const batchQuantity = Math.floor(
+      this.features.shape[0] / this.options.batchSize
+    )
+
     for (let i = 0; i < this.options.iterations; i++) {
-      this.gradientDescent()
+      for (let j = 0; j < batchQuantity.length; j++) {
+        const { batchSize } = this.options
+        const startIndex = j * batchSize
+
+        const featureSlice = this.features.slice(
+          [startIndex, 0],
+          [batchSize, -1]
+        )
+
+        const labelSlice = this.label.slice(
+          [startIndex, 0],
+          [batchSize, -1]
+        )
+
+        this.gradientDescent(featureSlice, labelSlice)
+      }
+      this.recordMSE()
+      this.updateLearningRate()
     }
   }
 
@@ -57,7 +81,7 @@ class LinearRegression {
     if (this.mean && this.variance) {
       features = features.sub(this.mean).div(this.variance.pow(0.5))
     } else {
-      this.standardize(features)
+      features = this.standardize(features)
     }
 
     features = tf.ones([features.shape[0], 1]).concat(features, 1)
@@ -67,10 +91,37 @@ class LinearRegression {
 
   standardize (features) {
     const { mean, variance } = tf.moments(features, 0)
+
     this.mean = mean
     this.variance = variance
 
     return features.sub(mean).div(variance.pow(0.5))
+  }
+
+  recordMSE () {
+    const mse = this.features
+      .matMul(this.weights)
+      .sub(this.labels)
+      .pow(2)
+      .sum()
+      .div(this.features.shape[0])
+      .get()
+
+    this.mseHistory.unshift(mse)
+  }
+
+  updateLearningRate () {
+    if (this.mseHistory.length < 2) {
+      return
+    }
+
+    const [a, b] = this.mseHistory
+
+    if (a > b) {
+      this.options.learningRate /= 2
+    } else {
+      this.options.learningRate *= 1.05
+    }
   }
 }
 
