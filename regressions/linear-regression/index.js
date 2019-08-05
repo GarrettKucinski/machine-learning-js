@@ -3,21 +3,21 @@ const LinearRegression = require('./linear-regression')
 const plot = require('node-remote-plot')
 
 const tf = require('@tensorflow/tfjs')
-const loadCsv = require('./load-csv')
+const loadCsv = require('../load-csv')
 
 let { features, labels, testFeatures, testLabels } = loadCsv(
-  './cars.csv',
+  '../data/cars.csv',
   {
     shuffle: true,
-    splitTest: 50,
-    dataColumns: ['horsepower', 'displacement', 'weight'],
+    splitTest: 20,
+    dataColumns: ['horsepower', 'displacement', 'weight', 'cylinders'],
     labelColumns: ['mpg']
   }
 )
 
 const regression = new LinearRegression(features, labels, {
   learningRate: 0.1,
-  iterations: 3,
+  iterations: 5,
   batchSize: 10
 })
 
@@ -33,6 +33,8 @@ plot({
 console.log('R2 is: ', r2)
 
 regression.predict([
-  [120, 380, 2],
-  [70, 90, 1]
+  [120, 380, 2, 4],
+  [70, 90, 1, 6],
+  [145, 380, 3, 8],
+  [200, 345, 2.5, 8]
 ]).print()
